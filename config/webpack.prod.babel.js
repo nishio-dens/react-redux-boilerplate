@@ -2,13 +2,12 @@
 const path = require('path');
 // const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserJSPlugin = require('terser-webpack-plugin');
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 
 module.exports = require('./webpack.base.babel')({
   mode: 'production',
-  // In production, we skip all hot-reloading stuff
-  entry: [
-    path.join(process.cwd(), 'src/app.js')
-  ],
 
   // Utilize long-term caching by adding content hashes (not compilation hashes) to compiled assets
   output: {
@@ -35,7 +34,24 @@ module.exports = require('./webpack.base.babel')({
       },
       inject: true
     }),
+
+    // separate css
+    new MiniCssExtractPlugin({
+      // Options similar to the same options in webpackOptions.output
+      // both options are optional
+      filename: '[name].[chunkhash].css',
+      chunkFilename: '[id].[chunkhash].css',
+    }),
   ],
+
+  optimization: {
+    namedModules: true,
+    splitChunks: {
+      name: 'vendor',
+      minChunks: 2
+    },
+    minimizer: [new TerserJSPlugin({}), new OptimizeCssAssetsPlugin({})]
+  },
 
   performance: {
     assetFilter: (assetFilename) => !(/(\.map$)|(^(main\.|favicon\.))/.test(assetFilename)),

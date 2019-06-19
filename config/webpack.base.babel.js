@@ -2,14 +2,28 @@
  * COMMON WEBPACK CONFIGURATION
  */
 
+const glob = require('glob');
 const path = require('path');
 const webpack = require('webpack');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const ManifestPlugin = require('webpack-manifest-plugin');
 
 process.noDeprecation = true;
 
+// load entries
+const entries = path.join(process.cwd(), 'src', 'entries');
+const targets = glob.sync(path.join(entries, '**/*.{js,jsx,ts,tsx}'));
+const entry = targets.reduce((entry, target) => {
+  const bundle = path.relative(entries, target)
+  const ext = path.extname(bundle)
+  return Object.assign({}, entry, {
+    [bundle.replace(ext, '')]: path.join(process.cwd(), 'src', 'entries', bundle),
+  })
+}, {});
+
 module.exports = (options) => ({
   mode: options.mode,
-  entry: options.entry,
+  entry: entry,
   output: Object.assign(
     {
       // Compile into js/build.js
@@ -30,36 +44,55 @@ module.exports = (options) => ({
       },
       {
         // Preprocess our own .scss files
-        test: /\.scss$/,
+        test: /\.(sa|sc|c)ss$/,
         exclude: /node_modules/,
-        use: ['style-loader', 'css-loader', 'sass-loader']
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true
+            }
+          },
+        ]
       },
       {
         // Preprocess 3rd party .css files located in node_modules
-        test: /\.css$/,
+        test: /\.(sa|sc|c)ss$/,
         include: /node_modules/,
-        use: ['style-loader', 'css-loader']
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader
+          },
+          'css-loader',
+          'sass-loader'
+        ]
       },
       {
         test: /\.(eot|svg|otf|ttf|woff|woff2)$/,
         use: 'file-loader'
       },
       {
-        test: /\.(jpg|png|gif)$/,
+        test: /\.(jpg|png|gif|ico)$/,
         use: 'file-loader'
       },
       {
         test: /\.html$/,
         use: 'html-loader'
-      },
-      {
-        test: /\.(mp4|webm)$/,
-        use: {
-          loader: 'url-loader',
-          options: {
-            limit: 10000
-          }
-        }
       }
     ]
   },
@@ -76,7 +109,10 @@ module.exports = (options) => ({
       'process.env': {
         NODE_ENV: JSON.stringify(process.env.NODE_ENV)
       }
-    })
+    }),
+
+    // Dump manifest.json
+    new ManifestPlugin()
   ]),
   resolve: {
     modules: ['src', 'node_modules'],
@@ -86,12 +122,6 @@ module.exports = (options) => ({
   devtool: options.devtool,
   target: 'web', // Make web variables accessible to webpack, e.g. window
   performance: options.performance || {},
-  optimization: {
-    namedModules: true,
-    splitChunks: {
-      name: 'vendor',
-      minChunks: 2
-    }
-  },
+  optimization: options.optimization || {},
   devServer: options.devServer || {}
 });
