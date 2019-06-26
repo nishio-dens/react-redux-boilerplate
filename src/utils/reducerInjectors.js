@@ -3,12 +3,10 @@ import isEmpty from 'lodash/isEmpty';
 import isFunction from 'lodash/isFunction';
 import isString from 'lodash/isString';
 
-import checkStore from './checkStore';
 import createReducer from '../reducers';
 
 export function injectReducerFactory(store, isValid) {
   return function injectReducer(key, reducer) {
-    if (!isValid) checkStore(store);
 
     invariant(
       isString(key) && !isEmpty(key) && isFunction(reducer),
