@@ -6,7 +6,7 @@ const glob = require('glob');
 const path = require('path');
 const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const ManifestPlugin = require('webpack-manifest-plugin');
+const ManifestPlugin = require('webpack-assets-manifest');
 
 process.noDeprecation = true;
 
@@ -112,7 +112,9 @@ module.exports = (options) => ({
     }),
 
     // Dump manifest.json
-    new ManifestPlugin()
+    new ManifestPlugin({
+      entrypoints: true
+    })
   ]),
   resolve: {
     modules: ['src', 'node_modules'],
